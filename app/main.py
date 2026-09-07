@@ -234,24 +234,6 @@ async def clinician_override(
             "clinician_esi_level": record.clinician_esi_level}
 
 
-# ── POST /assessments/{id}/outcome — record patient outcome ──────────────────
-@app.post("/assessments/{assessment_id}/outcome")
-async def record_outcome(
-    assessment_id: int,
-    outcome: OutcomeRecord,
-    session: AsyncSession = Depends(get_session),
-):
-    """Record the actual patient outcome (for measuring System accuracy)."""
-    record = await session.get(TriageAssessment, assessment_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="Assessment not found")
-
-    record.outcome = outcome.outcome
-    record.outcome_notes = outcome.outcome_notes
-    await session.commit()
-    await session.refresh(record)
-
-    return {"message": "Outcome recorded", "id": record.id, "outcome": record.outcome}
 
 
 # ── GET /dashboard — metrics for monitoring ─────────────────────────────────
