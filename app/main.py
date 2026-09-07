@@ -3,7 +3,11 @@ FastAPI main application — ED Triage AI Assistant.
 """
 
 import json
+import os
+from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -309,6 +313,7 @@ async def dashboard(session: AsyncSession = Depends(get_session)):
     over_count = over_result.scalar() or 0
     over_triage_pct = (over_count / clinician_count * 100) if clinician_count > 0 else 0.0
 
+
     return DashboardMetrics(
         total_assessments=total_assessments,
         high_risk_count=high_count,
@@ -318,3 +323,16 @@ async def dashboard(session: AsyncSession = Depends(get_session)):
         under_triage_rate=round(under_triage_pct, 1),
         over_triage_rate=round(over_triage_pct, 1),
     )
+
+
+# ── Serve React frontend (must be last) ──────────────────────────────────────
+FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
+
+if FRONTEND_DIST.exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        index = FRONTEND_DIST / "index.html"
+        return FileResponse(index)
+
