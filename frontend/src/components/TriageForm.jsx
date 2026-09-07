@@ -90,7 +90,7 @@ function TriageForm({ onSubmit }) {
           </label>
           <label className="checkbox-label">
             <input type="checkbox" checked={form.is_postpartum} onChange={e => update('is_postpartum', e.target.checked)} />
-            Postpartum (< 6 weeks)
+            Postpartum (&lt; 6 weeks)
           </label>
         </div>
       </fieldset>
