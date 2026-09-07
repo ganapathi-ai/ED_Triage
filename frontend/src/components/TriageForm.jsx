@@ -13,8 +13,16 @@ const SYMPTOM_OPTIONS = [
 const HISTORY_OPTIONS = [
   'Hypertension', 'Diabetes', 'Heart disease', 'Asthma/COPD',
   'Cancer', 'Kidney disease', 'Liver disease', 'Stroke',
-  'Immunosuppressed', 'Pregnancy', 'Obesity', 'Substance use',
+  'Immunosuppressed', 'Obesity', 'Substance use',
   'Psychiatric disorder', 'Bleeding disorder', 'Recent surgery',
+]
+
+const HISTORY_OPTIONS_FEMALE = [
+  ...['Hypertension', 'Diabetes', 'Heart disease', 'Asthma/COPD',
+  'Cancer', 'Kidney disease', 'Liver disease', 'Stroke',
+  'Immunosuppressed', 'Obesity', 'Substance use',
+  'Psychiatric disorder', 'Bleeding disorder', 'Recent surgery'],
+  'Pregnancy',
 ]
 
 function TriageForm({ onSubmit }) {
@@ -30,7 +38,15 @@ function TriageForm({ onSubmit }) {
   })
   const [submitting, setSubmitting] = useState(false)
 
-  const update = (key, val) => setForm(f => ({ ...f, [key]: val }))
+  const update = (key, val) => {
+    if (key === 'sex' && val === 'M') {
+      // Reset pregnancy fields when switching to Male
+      setForm(f => ({ ...f, sex: 'M', is_pregnant: false, is_postpartum: false,
+        medical_history: f.medical_history.filter(h => h !== 'Pregnancy') }))
+    } else {
+      setForm(f => ({ ...f, [key]: val }))
+    }
+  }
 
   const toggleItem = (key, item) => {
     setForm(f => ({
@@ -84,14 +100,18 @@ function TriageForm({ onSubmit }) {
           <input type="text" value={form.chief_complaint} onChange={e => update('chief_complaint', e.target.value)} placeholder="e.g., chest pain, shortness of breath" />
         </label>
         <div className="form-row">
-          <label className="checkbox-label">
-            <input type="checkbox" checked={form.is_pregnant} onChange={e => update('is_pregnant', e.target.checked)} />
-            Pregnant
-          </label>
-          <label className="checkbox-label">
-            <input type="checkbox" checked={form.is_postpartum} onChange={e => update('is_postpartum', e.target.checked)} />
-            Postpartum (&lt; 6 weeks)
-          </label>
+          {form.sex === 'F' && (
+            <>
+              <label className="checkbox-label">
+                <input type="checkbox" checked={form.is_pregnant} onChange={e => update('is_pregnant', e.target.checked)} />
+                Pregnant
+              </label>
+              <label className="checkbox-label">
+                <input type="checkbox" checked={form.is_postpartum} onChange={e => update('is_postpartum', e.target.checked)} />
+                Postpartum (&lt; 6 weeks)
+              </label>
+            </>
+          )}
         </div>
       </fieldset>
 
@@ -165,7 +185,7 @@ function TriageForm({ onSubmit }) {
       <fieldset>
         <legend>Medical History (select all that apply)</legend>
         <div className="checkbox-grid">
-          {HISTORY_OPTIONS.map(h => (
+          {(form.sex === 'F' ? HISTORY_OPTIONS_FEMALE : HISTORY_OPTIONS).map(h => (
             <label key={h} className="chip-label">
               <input
                 type="checkbox"

@@ -83,6 +83,13 @@ class TriageEngine:
         reasons: list[str] = []
         warnings: list[str] = []
 
+        # ── Sex-based sanity guard ────────────────────────────────────────
+        # Pregnancy flags are only valid for female patients
+        if p.sex != "F":
+            p.is_pregnant = False
+            p.is_postpartum = False
+            p.medical_history = [h for h in p.medical_history if h.lower() != "pregnancy"]
+
         # ══════════════════════════════════════════════════════════════════
         # DECISION POINT A: Lifesaving Intervention Required? → ESI 1
         # (p. 9-10, ESI Handbook)
