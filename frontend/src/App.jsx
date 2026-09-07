@@ -5,7 +5,7 @@ import AssessmentHistory from './components/AssessmentHistory'
 import Dashboard from './components/Dashboard'
 import './App.css'
 
-const API_BASE = '/api'
+const API_BASE = ''
 
 function App() {
   const [view, setView] = useState('form') // 'form' | 'history' | 'dashboard'
