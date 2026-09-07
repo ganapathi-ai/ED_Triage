@@ -111,17 +111,20 @@ function NumericInput({ fieldKey, value, onChange, placeholder, step }) {
   const [error, setError] = useState('')
 
   const handleChange = (e) => {
-    const raw = e.target.value
-    if (raw === '') { setError(''); onChange(raw); return }
+    const raw = e.target.value;
+    onChange(raw); // Always allow raw typing
 
-    const num = rules.integer ? parseInt(raw, 10) : parseFloat(raw)
-    if (isNaN(num)) { setError('Must be a number'); onChange(''); return }
+    if (raw === '') { setError(''); return; }
 
-    if (num < rules.min || num > rules.max) {
-      setError(`Must be ${rules.min}–${rules.max} ${rules.unit}`)
-      // Clamp to boundary instead of rejecting
-      onChange(String(num < rules.min ? rules.min : rules.max))
+    const num = rules.integer ? parseInt(raw, 10) : parseFloat(raw);
+    if (isNaN(num)) { 
+      setError('Must be a number');
+    } else if (num < rules.min || num > rules.max) {
+      setError(`Must be ${rules.min}-${rules.max} ${rules.unit}`);
     } else {
+      setError('');
+    }
+  } else {
       setError('')
       onChange(String(num))
     }
