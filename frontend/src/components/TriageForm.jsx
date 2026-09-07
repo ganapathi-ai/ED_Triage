@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import './TriageForm.css'
 
 // ── Chief Complaints: exactly what the rule engine handles ──────────────────
-// Grouped by clinical category so users understand the engine's scope
 const CHIEF_COMPLAINT_OPTIONS = [
   { group: '🫀 Cardiac / Vascular', options: [
     { label: 'Chest pain',                    value: 'chest pain',             autoSymptoms: ['Chest pain'] },
@@ -63,7 +62,6 @@ const CHIEF_COMPLAINT_OPTIONS = [
   ]},
 ]
 
-// Flat map for auto-symptom lookup
 const COMPLAINT_MAP = {}
 CHIEF_COMPLAINT_OPTIONS.forEach(group =>
   group.options.forEach(opt => { COMPLAINT_MAP[opt.value] = opt })
@@ -85,10 +83,67 @@ const HISTORY_OPTIONS = [
   'Psychiatric disorder', 'Bleeding disorder', 'Recent surgery',
 ]
 
-const HISTORY_OPTIONS_FEMALE = [
-  ...HISTORY_OPTIONS,
-  'Pregnancy',
-]
+const HISTORY_OPTIONS_FEMALE = [...HISTORY_OPTIONS, 'Pregnancy']
+
+// ── Field validation rules (matches backend Pydantic + ESI clinical ranges) ──
+const FIELD_RULES = {
+  age:               { min: 0,    max: 120,  integer: true,  label: 'Age',              unit: 'years' },
+  heart_rate:        { min: 0,    max: 300,  integer: true,  label: 'Heart Rate',       unit: 'bpm'   },
+  bp_systolic:       { min: 0,    max: 300,  integer: true,  label: 'BP Systolic',      unit: 'mmHg'  },
+  bp_diastolic:      { min: 0,    max: 200,  integer: true,  label: 'BP Diastolic',     unit: 'mmHg'  },
+  respiratory_rate:  { min: 0,    max: 80,   integer: true,  label: 'Respiratory Rate', unit: '/min'  },
+  spo2:              { min: 0,    max: 100,  integer: false, label: 'SpO2',             unit: '%'     },
+  temperature:       { min: 20.0, max: 45.0, integer: false, label: 'Temperature',      unit: '°C'    },
+  pain_score:        { min: 0,    max: 10,   integer: true,  label: 'Pain Score',       unit: '/10'   },
+}
+
+function clampNumeric(value, rules) {
+  if (value === '' || value === '-') return value
+  const num = rules.integer ? parseInt(value, 10) : parseFloat(value)
+  if (isNaN(num)) return ''
+  if (num < rules.min) return String(rules.min)
+  if (num > rules.max) return String(rules.max)
+  return String(num)
+}
+
+function NumericInput({ fieldKey, value, onChange, placeholder, step }) {
+  const rules = FIELD_RULES[fieldKey]
+  const [error, setError] = useState('')
+
+  const handleChange = (e) => {
+    const raw = e.target.value
+    if (raw === '') { setError(''); onChange(raw); return }
+
+    const num = rules.integer ? parseInt(raw, 10) : parseFloat(raw)
+    if (isNaN(num)) { setError('Must be a number'); onChange(''); return }
+
+    if (num < rules.min || num > rules.max) {
+      setError(`Must be ${rules.min}–${rules.max} ${rules.unit}`)
+      // Clamp to boundary instead of rejecting
+      onChange(String(num < rules.min ? rules.min : rules.max))
+    } else {
+      setError('')
+      onChange(String(num))
+    }
+  }
+
+  return (
+    <div className="numeric-field">
+      <input
+        type="number"
+        value={value}
+        onChange={handleChange}
+        onBlur={e => onChange(clampNumeric(e.target.value, rules))}
+        placeholder={placeholder}
+        min={rules.min}
+        max={rules.max}
+        step={step || (rules.integer ? 1 : 0.1)}
+      />
+      {error && <span className="field-error">{error}</span>}
+      <span className="field-range">{rules.min}–{rules.max} {rules.unit}</span>
+    </div>
+  )
+}
 
 function TriageForm({ onSubmit }) {
   const [form, setForm] = useState({
@@ -108,7 +163,6 @@ function TriageForm({ onSubmit }) {
       setForm(f => ({ ...f, sex: 'M', is_pregnant: false, is_postpartum: false,
         medical_history: f.medical_history.filter(h => h !== 'Pregnancy') }))
     } else if (key === 'chief_complaint') {
-      // Auto-populate matching symptoms
       const match = COMPLAINT_MAP[val]
       if (match) {
         setForm(f => ({
@@ -135,17 +189,25 @@ function TriageForm({ onSubmit }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Final clamp + parse before sending
+    const age = parseInt(form.age) || 0
+    if (age < 0 || age > 120) return alert('Age must be 0–120 years')
+
+    const pain = form.pain_score !== '' ? parseInt(form.pain_score) : null
+    if (pain !== null && (pain < 0 || pain > 10)) return alert('Pain score must be 0–10')
+
     setSubmitting(true)
     const data = {
       ...form,
-      age: parseInt(form.age) || 0,
-      heart_rate: form.heart_rate ? parseInt(form.heart_rate) : null,
-      bp_systolic: form.bp_systolic ? parseInt(form.bp_systolic) : null,
-      bp_diastolic: form.bp_diastolic ? parseInt(form.bp_diastolic) : null,
+      age,
+      heart_rate:       form.heart_rate       ? parseInt(form.heart_rate)       : null,
+      bp_systolic:      form.bp_systolic      ? parseInt(form.bp_systolic)      : null,
+      bp_diastolic:     form.bp_diastolic     ? parseInt(form.bp_diastolic)     : null,
       respiratory_rate: form.respiratory_rate ? parseInt(form.respiratory_rate) : null,
-      spo2: form.spo2 ? parseFloat(form.spo2) : null,
-      temperature: form.temperature ? parseFloat(form.temperature) : null,
-      pain_score: form.pain_score ? parseInt(form.pain_score) : null,
+      spo2:             form.spo2             ? parseFloat(form.spo2)           : null,
+      temperature:      form.temperature      ? parseFloat(form.temperature)    : null,
+      pain_score:       pain,
     }
     await onSubmit(data)
     setSubmitting(false)
@@ -161,7 +223,7 @@ function TriageForm({ onSubmit }) {
         <div className="form-row">
           <label>
             Age
-            <input type="number" value={form.age} onChange={e => update('age', e.target.value)} required min="0" max="120" />
+            <NumericInput fieldKey="age" value={form.age} onChange={v => update('age', v)} placeholder="0–120" />
           </label>
           <label>
             Sex
@@ -172,15 +234,10 @@ function TriageForm({ onSubmit }) {
           </label>
         </div>
 
-        {/* Chief Complaint — categorized dropdown matching rule engine */}
         <label>
           Chief Complaint
           <span className="field-hint">⚙️ Rule-engine supported complaints only</span>
-          <select
-            value={form.chief_complaint}
-            onChange={e => update('chief_complaint', e.target.value)}
-            required
-          >
+          <select value={form.chief_complaint} onChange={e => update('chief_complaint', e.target.value)} required>
             <option value="">— Select chief complaint —</option>
             {CHIEF_COMPLAINT_OPTIONS.map(group => (
               <optgroup key={group.group} label={group.group}>
@@ -193,9 +250,7 @@ function TriageForm({ onSubmit }) {
         </label>
 
         {form.chief_complaint && (
-          <p className="auto-hint">
-            ✅ Auto-selected matching symptoms below. You can add more manually.
-          </p>
+          <p className="auto-hint">✅ Matching symptoms auto-selected below. Add more if needed.</p>
         )}
 
         <div className="form-row">
@@ -220,35 +275,35 @@ function TriageForm({ onSubmit }) {
         <div className="form-row">
           <label>
             Heart Rate (bpm)
-            <input type="number" value={form.heart_rate} onChange={e => update('heart_rate', e.target.value)} placeholder="60-100" />
+            <NumericInput fieldKey="heart_rate" value={form.heart_rate} onChange={v => update('heart_rate', v)} placeholder="60–100" />
           </label>
           <label>
-            BP Systolic
-            <input type="number" value={form.bp_systolic} onChange={e => update('bp_systolic', e.target.value)} placeholder="90-120" />
+            BP Systolic (mmHg)
+            <NumericInput fieldKey="bp_systolic" value={form.bp_systolic} onChange={v => update('bp_systolic', v)} placeholder="90–120" />
           </label>
           <label>
-            BP Diastolic
-            <input type="number" value={form.bp_diastolic} onChange={e => update('bp_diastolic', e.target.value)} placeholder="60-80" />
+            BP Diastolic (mmHg)
+            <NumericInput fieldKey="bp_diastolic" value={form.bp_diastolic} onChange={v => update('bp_diastolic', v)} placeholder="60–80" />
           </label>
         </div>
         <div className="form-row">
           <label>
-            Respiratory Rate
-            <input type="number" value={form.respiratory_rate} onChange={e => update('respiratory_rate', e.target.value)} placeholder="12-20" />
+            Respiratory Rate (/min)
+            <NumericInput fieldKey="respiratory_rate" value={form.respiratory_rate} onChange={v => update('respiratory_rate', v)} placeholder="12–20" />
           </label>
           <label>
             SpO2 (%)
-            <input type="number" value={form.spo2} onChange={e => update('spo2', e.target.value)} placeholder="95-100" step="0.1" />
+            <NumericInput fieldKey="spo2" value={form.spo2} onChange={v => update('spo2', v)} placeholder="95–100" step={0.1} />
           </label>
           <label>
             Temperature (°C)
-            <input type="number" value={form.temperature} onChange={e => update('temperature', e.target.value)} placeholder="36.5-37.5" step="0.1" />
+            <NumericInput fieldKey="temperature" value={form.temperature} onChange={v => update('temperature', v)} placeholder="36.5–37.5" step={0.1} />
           </label>
         </div>
         <div className="form-row">
           <label>
-            Pain Score (0-10)
-            <input type="number" value={form.pain_score} onChange={e => update('pain_score', e.target.value)} min="0" max="10" />
+            Pain Score (0–10)
+            <NumericInput fieldKey="pain_score" value={form.pain_score} onChange={v => update('pain_score', v)} placeholder="0–10" />
           </label>
           <label>
             Level of Consciousness
