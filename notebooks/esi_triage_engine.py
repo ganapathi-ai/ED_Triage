@@ -1,5 +1,5 @@
 """
-ED Triage AI - Comprehensive Rule Engine
+ED Triage System - Comprehensive Rule Engine
 Source: ESI Handbook 5th Edition (Emergency Nurses Association, 2023)
 
 This module implements the complete ESI v5 algorithm with all 4 decision points.

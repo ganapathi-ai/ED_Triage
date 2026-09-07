@@ -32,11 +32,10 @@ function AssessmentHistory({ apiBase }) {
               <th>Date</th>
               <th>Age</th>
               <th>Symptoms</th>
-              <th>AI ESI</th>
+              <th>System ESI</th>
               <th>Clinician ESI</th>
               <th>Risk</th>
-              <th>Outcome</th>
-            </tr>
+                          </tr>
           </thead>
           <tbody>
             {records.map(r => (
@@ -48,8 +47,7 @@ function AssessmentHistory({ apiBase }) {
                 <td><span className={`esi-badge esi-${r.ai_esi_level}`}>{r.ai_esi_level}</span></td>
                 <td>{r.clinician_esi_level || '—'}</td>
                 <td><span className={`risk-badge risk-${r.ai_risk?.toLowerCase()}`}>{r.ai_risk}</span></td>
-                <td>{r.outcome || '—'}</td>
-              </tr>
+                              </tr>
             ))}
           </tbody>
         </table>
@@ -68,13 +66,11 @@ function AssessmentHistory({ apiBase }) {
               <div><strong>History:</strong> {selected.medical_history.join(', ') || 'None'}</div>
               <div><strong>Meds:</strong> {selected.medications.join(', ') || 'None'}</div>
               <div><strong>Allergies:</strong> {selected.allergies.join(', ') || 'None'}</div>
-              <div><strong>AI ESI:</strong> <span className={`esi-badge esi-${selected.ai_esi_level}`}>{selected.ai_esi_level}</span></div>
+              <div><strong>System ESI:</strong> <span className={`esi-badge esi-${selected.ai_esi_level}`}>{selected.ai_esi_level}</span></div>
               <div><strong>Clinician ESI:</strong> {selected.clinician_esi_level || 'Not recorded'}</div>
-              <div><strong>Outcome:</strong> {selected.outcome || 'Pending'}</div>
-              <div className="full-width"><strong>AI Reasons:</strong> {selected.ai_reasons?.join(', ')}</div>
+                            <div className="full-width"><strong>System Reasons:</strong> {selected.ai_reasons?.join(', ')}</div>
               {selected.clinician_notes && <div className="full-width"><strong>Clinician Notes:</strong> {selected.clinician_notes}</div>}
-              {selected.outcome_notes && <div className="full-width"><strong>Outcome Notes:</strong> {selected.outcome_notes}</div>}
-            </div>
+                          </div>
           </div>
         )}
       </div>

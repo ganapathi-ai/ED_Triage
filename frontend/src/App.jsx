@@ -37,7 +37,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-content">
-          <h1>ED Triage AI Assistant</h1>
+          <h1>ED Triage Assistant</h1>
           <p className="subtitle">ESI v5-based triage decision support</p>
         </div>
         <nav className="nav-tabs">

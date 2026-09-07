@@ -11,7 +11,7 @@ def add_code(source):
 
 # ═══════════════════════════════════════════════════════════════════════════
 add_md([
-    "# ED Triage AI — Comprehensive Rule Engine & Analysis",
+    "# ED Triage System — Comprehensive Rule Engine & Analysis",
     "",
     "> **Source material:** `guidleines/ESI-Handbook-5th-Edition-3-2023.pdf`",
     "> **Algorithm:** Emergency Severity Index (ESI) v5 — Emergency Nurses Association",
@@ -528,7 +528,7 @@ patient_demo = PatientData(
 result_demo = engine.assess(patient_demo)
 
 print("=" * 65)
-print("  ED TRIAGE AI — DEMO PATIENT")
+print("  ED TRIAGE SYSTEM — DEMO PATIENT")
 print("=" * 65)
 print()
 print("  Patient:    54yo Male")

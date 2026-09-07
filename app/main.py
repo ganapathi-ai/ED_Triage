@@ -1,5 +1,5 @@
 """
-FastAPI main application — ED Triage AI Assistant.
+FastAPI main application — ED Triage Assistant.
 """
 
 import json
@@ -16,12 +16,12 @@ from app.database import init_db, get_session, TriageAssessment, ESILevel
 from app.triage import TriageEngine, PatientData
 from app.models import (
     TriageRequest, TriageResponse, TriageRecord,
-    ClinicianOverride, OutcomeRecord, DashboardMetrics
+    ClinicianOverride, DashboardMetrics
 )
 
 app = FastAPI(
-    title="ED Triage AI Assistant",
-    description="AI-powered triage decision support based on ESI v5 algorithm.",
+    title="ED Triage Assistant",
+    description="Automated triage decision support based on ESI v5 algorithm.",
     version="1.0.0",
 )
 
@@ -46,7 +46,7 @@ async def startup():
 # ── Health check ─────────────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "ed-triage-ai", "version": "1.0.0"}
+    return {"status": "ok", "service": "ed-triage", "version": "1.0.0"}
 
 
 # ── POST /triage — main triage endpoint ──────────────────────────────────────
@@ -106,7 +106,7 @@ async def assess_triage(
         medications=json.dumps(request.medications),
         allergies=json.dumps(request.allergies),
         symptoms=json.dumps(request.symptoms),
-        # AI output
+        # System output
         ai_esi_level=result.esi_level.value,
         ai_risk=result.risk,
         ai_reasons=json.dumps(result.reasons),
@@ -166,8 +166,6 @@ async def list_assessments(
             "ai_recommendation": record.ai_recommendation,
             "clinician_esi_level": record.clinician_esi_level,
             "clinician_notes": record.clinician_notes,
-            "outcome": record.outcome,
-            "outcome_notes": record.outcome_notes,
         }
 
     return [TriageRecord(**_deserialize(r)) for r in records]
@@ -210,8 +208,6 @@ async def get_assessment(
             "ai_recommendation": r.ai_recommendation,
             "clinician_esi_level": r.clinician_esi_level,
             "clinician_notes": r.clinician_notes,
-            "outcome": r.outcome,
-            "outcome_notes": r.outcome_notes,
         }
 
     return TriageRecord(**_deserialize(record))
@@ -224,7 +220,7 @@ async def clinician_override(
     override: ClinicianOverride,
     session: AsyncSession = Depends(get_session),
 ):
-    """Allow clinician to override or confirm AI triage level."""
+    """Allow clinician to override or confirm System triage level."""
     record = await session.get(TriageAssessment, assessment_id)
     if not record:
         raise HTTPException(status_code=404, detail="Assessment not found")
@@ -245,7 +241,7 @@ async def record_outcome(
     outcome: OutcomeRecord,
     session: AsyncSession = Depends(get_session),
 ):
-    """Record the actual patient outcome (for measuring AI accuracy)."""
+    """Record the actual patient outcome (for measuring System accuracy)."""
     record = await session.get(TriageAssessment, assessment_id)
     if not record:
         raise HTTPException(status_code=404, detail="Assessment not found")
@@ -281,7 +277,7 @@ async def dashboard(session: AsyncSession = Depends(get_session)):
     med_count = med_result.scalar() or 0
     low_count = low_result.scalar() or 0
 
-    # Agreement rate between AI and clinician
+    # Agreement rate between System and clinician
     agreement_result = await session.execute(
         select(func.count()).select_from(TriageAssessment)
         .where(TriageAssessment.clinician_esi_level.is_not(None))
@@ -295,7 +291,7 @@ async def dashboard(session: AsyncSession = Depends(get_session)):
     clinician_count = clinician_total.scalar() or 0
     agreement_pct = (agreement_count / clinician_count * 100) if clinician_count > 0 else 0.0
 
-    # Under-triage: AI rated lower than clinician (AI missed risk)
+    # Under-triage: System rated lower than clinician (System missed risk)
     under_result = await session.execute(
         select(func.count()).select_from(TriageAssessment)
         .where(TriageAssessment.clinician_esi_level.is_not(None))
@@ -304,7 +300,7 @@ async def dashboard(session: AsyncSession = Depends(get_session)):
     under_count = under_result.scalar() or 0
     under_triage_pct = (under_count / clinician_count * 100) if clinician_count > 0 else 0.0
 
-    # Over-triage: AI rated higher than clinician (AI over-flagged)
+    # Over-triage: System rated higher than clinician (System over-flagged)
     over_result = await session.execute(
         select(func.count()).select_from(TriageAssessment)
         .where(TriageAssessment.clinician_esi_level.is_not(None))

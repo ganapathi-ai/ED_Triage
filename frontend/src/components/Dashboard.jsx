@@ -35,7 +35,7 @@ function Dashboard({ apiBase }) {
       </div>
 
       <div className="accuracy-metrics">
-        <h3>AI Accuracy Metrics (vs Clinician)</h3>
+        <h3>System Accuracy Metrics (vs Clinician)</h3>
         {metrics.total_assessments === 0 ? (
           <p>No clinician overrides recorded yet. Override assessments to see agreement rates.</p>
         ) : (
@@ -48,14 +48,14 @@ function Dashboard({ apiBase }) {
               <span>{metrics.ai_clinician_agreement}%</span>
             </div>
             <div className="accuracy-item">
-              <span>Under-triage Rate (AI rated lower than clinician)</span>
+              <span>Under-triage Rate (System rated lower than clinician)</span>
               <div className="bar-container">
                 <div className="bar under" style={{ width: `${metrics.under_triage_rate}%` }} />
               </div>
               <span>{metrics.under_triage_rate}%</span>
             </div>
             <div className="accuracy-item">
-              <span>Over-triage Rate (AI rated higher than clinician)</span>
+              <span>Over-triage Rate (System rated higher than clinician)</span>
               <div className="bar-container">
                 <div className="bar over" style={{ width: `${metrics.over_triage_rate}%` }} />
               </div>

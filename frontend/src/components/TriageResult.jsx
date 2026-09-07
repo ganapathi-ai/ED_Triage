@@ -14,9 +14,6 @@ function TriageResult({ result, onNew, apiBase }) {
   const [overrideNote, setOverrideNote] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [showOutcome, setShowOutcome] = useState(false)
-  const [outcome, setOutcome] = useState('')
-  const [outcomeNotes, setOutcomeNotes] = useState('')
-  const [outcomeSaved, setOutcomeSaved] = useState(false)
 
   const config = ESI_CONFIG[result.esi_level] || ESI_CONFIG[3]
 
@@ -31,19 +28,6 @@ function TriageResult({ result, onNew, apiBase }) {
         }),
       })
       setSubmitted(true)
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
-  const handleOutcome = async () => {
-    try {
-      await fetch(`${apiBase}/assessments/${result.id}/outcome`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ outcome, outcome_notes: outcomeNotes }),
-      })
-      setOutcomeSaved(true)
     } catch (err) {
       console.error(err)
     }
@@ -115,38 +99,6 @@ function TriageResult({ result, onNew, apiBase }) {
           </>
         ) : (
           <p className="success-msg">Override recorded — ESI {override} (clinician decision)</p>
-        )}
-      </div>
-
-      {/* Outcome Recording */}
-      <div className="outcome-section">
-        <h3>Record Patient Outcome</h3>
-        {!outcomeSaved ? (
-          <>
-            <div className="form-row">
-              <label>
-                Outcome:
-                <select value={outcome} onChange={e => setOutcome(e.target.value)}>
-                  <option value="">— Select —</option>
-                  <option value="discharged">Discharged</option>
-                  <option value="admitted">Admitted (ward)</option>
-                  <option value="icu">ICU Admission</option>
-                  <option value="transferred">Transferred</option>
-                  <option value="deceased">Deceased</option>
-                  <option value="left_ama">Left AMA</option>
-                </select>
-              </label>
-            </div>
-            <label>
-              Notes:
-              <textarea value={outcomeNotes} onChange={e => setOutcomeNotes(e.target.value)} placeholder="Additional outcome details..." />
-            </label>
-            <button className="outcome-btn" onClick={handleOutcome} disabled={!outcome}>
-              Save Outcome
-            </button>
-          </>
-        ) : (
-          <p className="success-msg">Outcome saved: {outcome}</p>
         )}
       </div>
     </div>

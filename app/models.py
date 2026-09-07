@@ -68,12 +68,6 @@ class ClinicianOverride(BaseModel):
     clinician_notes: Optional[str] = None
 
 
-# ── Outcome record ──────────────────────────────────────────────────────────
-class OutcomeRecord(BaseModel):
-    outcome: str  # "discharged", "admitted", "icu", "transferred", "deceased"
-    outcome_notes: Optional[str] = None
-
-
 # ── Database record returned by API ─────────────────────────────────────────
 class TriageRecord(BaseModel):
     id: int
@@ -100,8 +94,7 @@ class TriageRecord(BaseModel):
     ai_recommendation: Optional[str]
     clinician_esi_level: Optional[int]
     clinician_notes: Optional[str]
-    outcome: Optional[str]
-    outcome_notes: Optional[str]
+    
 
     model_config = {"from_attributes": True}
 
@@ -113,5 +106,5 @@ class DashboardMetrics(BaseModel):
     medium_risk_count: int
     low_risk_count: int
     ai_clinician_agreement: float  # percentage
-    under_triage_rate: float       # percentage (did AI flag higher than clinician?)
-    over_triage_rate: float        # percentage (did AI flag higher than outcome required?)
+    under_triage_rate: float       # percentage (did system flag higher than clinician?)
+    over_triage_rate: float        # percentage (did system flag higher than outcome required?)

@@ -63,7 +63,7 @@ class TriageAssessment(Base):
     allergies: Mapped[str | None] = mapped_column(Text, nullable=True)         # JSON string
     symptoms: Mapped[str | None] = mapped_column(Text, nullable=True)          # JSON string
 
-    # AI output
+    # System output
     ai_esi_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
     ai_risk: Mapped[str | None] = mapped_column(String(10), nullable=True)
     ai_reasons: Mapped[str | None] = mapped_column(Text, nullable=True)        # JSON string
@@ -73,10 +73,6 @@ class TriageAssessment(Base):
     # Clinician override
     clinician_esi_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
     clinician_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    # Outcome (filled after patient leaves)
-    outcome: Mapped[str | None] = mapped_column(String(50), nullable=True)     # admitted, discharged, transferred, etc.
-    outcome_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 # ── Engine setup ────────────────────────────────────────────────────────────
