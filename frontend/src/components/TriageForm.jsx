@@ -1,6 +1,74 @@
 import React, { useState } from 'react'
 import './TriageForm.css'
 
+// ── Chief Complaints: exactly what the rule engine handles ──────────────────
+// Grouped by clinical category so users understand the engine's scope
+const CHIEF_COMPLAINT_OPTIONS = [
+  { group: '🫀 Cardiac / Vascular', options: [
+    { label: 'Chest pain',                    value: 'chest pain',             autoSymptoms: ['Chest pain'] },
+    { label: 'Palpitations / Racing heart',   value: 'palpitations',           autoSymptoms: [] },
+    { label: 'Syncope / Fainting',            value: 'syncope',                autoSymptoms: ['Dizziness'] },
+  ]},
+  { group: '🫁 Respiratory', options: [
+    { label: 'Shortness of breath',           value: 'shortness of breath',    autoSymptoms: ['Shortness of breath'] },
+    { label: 'Difficulty breathing',          value: 'difficulty breathing',   autoSymptoms: ['Shortness of breath'] },
+    { label: 'Wheezing / Stridor',            value: 'wheezing',               autoSymptoms: ['Shortness of breath'] },
+    { label: 'Cough',                         value: 'cough',                  autoSymptoms: ['Cough'] },
+  ]},
+  { group: '🧠 Neurological', options: [
+    { label: 'Altered mental status',         value: 'altered mental status',  autoSymptoms: ['Altered mental status'] },
+    { label: 'Stroke symptoms (face droop / arm weakness / speech)', value: 'face drooping arm weakness speech difficulty', autoSymptoms: ['Weakness', 'Altered mental status'] },
+    { label: 'Sudden weakness / Numbness',    value: 'sudden weakness',        autoSymptoms: ['Weakness'] },
+    { label: 'Slurred speech / Aphasia',      value: 'slurred speech',         autoSymptoms: ['Altered mental status'] },
+    { label: 'Sudden vision loss',            value: 'sudden vision loss',     autoSymptoms: ['Eye pain'] },
+    { label: 'Headache',                      value: 'headache',               autoSymptoms: ['Headache'] },
+    { label: 'Seizure',                       value: 'seizure',                autoSymptoms: ['Seizure'] },
+    { label: 'Dizziness / Vertigo',           value: 'dizzy',                  autoSymptoms: ['Dizziness'] },
+  ]},
+  { group: '🫃 Abdominal / GI', options: [
+    { label: 'Abdominal pain',                value: 'abdominal pain',         autoSymptoms: ['Abdominal pain'] },
+    { label: 'Nausea / Vomiting',             value: 'nausea vomiting',        autoSymptoms: ['Nausea/Vomiting'] },
+    { label: 'Diarrhea',                      value: 'diarrhea',               autoSymptoms: ['Diarrhea'] },
+    { label: 'Constipation',                  value: 'constipation',           autoSymptoms: ['Constipation'] },
+    { label: 'Bleeding (GI)',                 value: 'bleeding',               autoSymptoms: ['Bleeding'] },
+  ]},
+  { group: '🦴 Trauma / Injury', options: [
+    { label: 'Fall / Injury',                 value: 'fall',                   autoSymptoms: ['Injury/Trauma'] },
+    { label: 'Motor vehicle collision (MVC)', value: 'motor vehicle',          autoSymptoms: ['Injury/Trauma'] },
+    { label: 'Gunshot wound',                 value: 'gunshot',                autoSymptoms: ['Injury/Trauma', 'Bleeding'] },
+    { label: 'Stab wound / Penetrating trauma', value: 'stab wound',          autoSymptoms: ['Injury/Trauma', 'Bleeding'] },
+    { label: 'Back pain',                     value: 'back pain',              autoSymptoms: ['Back pain'] },
+  ]},
+  { group: '🌡️ Infection / Sepsis', options: [
+    { label: 'Fever',                         value: 'fever',                  autoSymptoms: ['Fever'] },
+    { label: 'Fever + chills (sepsis concern)', value: 'fever chills infection', autoSymptoms: ['Fever'] },
+    { label: 'Urinary symptoms / UTI',        value: 'urinary',                autoSymptoms: ['Urinary symptoms'] },
+    { label: 'Rash / Skin infection',         value: 'rash',                   autoSymptoms: ['Rash'] },
+  ]},
+  { group: '🧬 Urological / Reproductive', options: [
+    { label: 'Testicular pain (torsion concern)', value: 'testicular pain',    autoSymptoms: ['Testicular pain'] },
+    { label: 'Lower quadrant pain (ovarian torsion concern)', value: 'lower quadrant pain', autoSymptoms: ['Abdominal pain'] },
+    { label: 'Vaginal bleeding (pregnancy concern)', value: 'vaginal bleeding abdominal pain', autoSymptoms: ['Abdominal pain', 'Bleeding'] },
+    { label: 'Heavy vaginal bleeding (postpartum)', value: 'heavy vaginal bleeding', autoSymptoms: ['Bleeding'] },
+  ]},
+  { group: '🧠 Mental Health / Toxicology', options: [
+    { label: 'Suicidal ideation / Self-harm',  value: 'suicidal',              autoSymptoms: ['Suicidal ideation'] },
+    { label: 'Overdose / Toxic ingestion',     value: 'overdose ingestion poisoning toxic', autoSymptoms: ['Overdose'] },
+    { label: 'Psychosis / Homicidal ideation', value: 'psychotic homicidal',   autoSymptoms: ['Altered mental status'] },
+    { label: 'Sexual assault',                 value: 'sexual assault',        autoSymptoms: ['Sexual assault'] },
+  ]},
+  { group: '👁️ Sensory', options: [
+    { label: 'Eye pain / Vision problem',     value: 'eye',                    autoSymptoms: ['Eye pain'] },
+    { label: 'Ear pain / Hearing issue',      value: 'ear',                    autoSymptoms: ['Ear pain'] },
+  ]},
+]
+
+// Flat map for auto-symptom lookup
+const COMPLAINT_MAP = {}
+CHIEF_COMPLAINT_OPTIONS.forEach(group =>
+  group.options.forEach(opt => { COMPLAINT_MAP[opt.value] = opt })
+)
+
 const SYMPTOM_OPTIONS = [
   'Chest pain', 'Shortness of breath', 'Abdominal pain', 'Headache',
   'Dizziness', 'Nausea/Vomiting', 'Fever', 'Cough',
@@ -18,10 +86,7 @@ const HISTORY_OPTIONS = [
 ]
 
 const HISTORY_OPTIONS_FEMALE = [
-  ...['Hypertension', 'Diabetes', 'Heart disease', 'Asthma/COPD',
-  'Cancer', 'Kidney disease', 'Liver disease', 'Stroke',
-  'Immunosuppressed', 'Obesity', 'Substance use',
-  'Psychiatric disorder', 'Bleeding disorder', 'Recent surgery'],
+  ...HISTORY_OPTIONS,
   'Pregnancy',
 ]
 
@@ -40,9 +105,20 @@ function TriageForm({ onSubmit }) {
 
   const update = (key, val) => {
     if (key === 'sex' && val === 'M') {
-      // Reset pregnancy fields when switching to Male
       setForm(f => ({ ...f, sex: 'M', is_pregnant: false, is_postpartum: false,
         medical_history: f.medical_history.filter(h => h !== 'Pregnancy') }))
+    } else if (key === 'chief_complaint') {
+      // Auto-populate matching symptoms
+      const match = COMPLAINT_MAP[val]
+      if (match) {
+        setForm(f => ({
+          ...f,
+          chief_complaint: val,
+          symptoms: [...new Set([...f.symptoms, ...match.autoSymptoms])],
+        }))
+      } else {
+        setForm(f => ({ ...f, chief_complaint: val }))
+      }
     } else {
       setForm(f => ({ ...f, [key]: val }))
     }
@@ -95,10 +171,33 @@ function TriageForm({ onSubmit }) {
             </select>
           </label>
         </div>
+
+        {/* Chief Complaint — categorized dropdown matching rule engine */}
         <label>
           Chief Complaint
-          <input type="text" value={form.chief_complaint} onChange={e => update('chief_complaint', e.target.value)} placeholder="e.g., chest pain, shortness of breath" />
+          <span className="field-hint">⚙️ Rule-engine supported complaints only</span>
+          <select
+            value={form.chief_complaint}
+            onChange={e => update('chief_complaint', e.target.value)}
+            required
+          >
+            <option value="">— Select chief complaint —</option>
+            {CHIEF_COMPLAINT_OPTIONS.map(group => (
+              <optgroup key={group.group} label={group.group}>
+                {group.options.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
         </label>
+
+        {form.chief_complaint && (
+          <p className="auto-hint">
+            ✅ Auto-selected matching symptoms below. You can add more manually.
+          </p>
+        )}
+
         <div className="form-row">
           {form.sex === 'F' && (
             <>
