@@ -124,10 +124,6 @@ function NumericInput({ fieldKey, value, onChange, placeholder, step }) {
     } else {
       setError('');
     }
-  } else {
-      setError('')
-      onChange(String(num))
-    }
   }
 
   return (
